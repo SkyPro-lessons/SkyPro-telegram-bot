@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 @Service
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
-    private Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
+    private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
 
     @Autowired
     private TelegramBot telegramBot;
@@ -56,7 +56,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             System.out.println("GOTCHA");
             long chatId = update.message().chat().id();
             String date = matcher.group(1);
-            LocalDateTime formattedDate = LocalDateTime.parse("01.01.2022 20:00", DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+            LocalDateTime formattedDate = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
             String task = matcher.group(3);
             System.out.println("Дата и время: " + date);
             System.out.println("Название задачи: " + task);
