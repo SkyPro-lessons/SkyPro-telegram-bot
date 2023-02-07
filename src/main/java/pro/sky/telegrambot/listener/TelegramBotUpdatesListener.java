@@ -25,12 +25,19 @@ import java.util.regex.Pattern;
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
+    private final Pattern pattern = Pattern.compile("([0-9.:\\s]{16})(\\s)([\\W+]+)");
+    private final DateTimeFormatter formatterPattern = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-    @Autowired
-    private TelegramBot telegramBot;
 
-    @Autowired
-    private NotificationTaskRepository notificationTaskRepository;
+    private final TelegramBot telegramBot;
+
+    private final NotificationTaskRepository notificationTaskRepository;
+
+
+    public TelegramBotUpdatesListener(TelegramBot telegramBot, NotificationTaskRepository notificationTaskRepository) {
+        this.telegramBot = telegramBot;
+        this.notificationTaskRepository = notificationTaskRepository;
+    }
 
     @PostConstruct
     public void init() {
@@ -50,18 +57,13 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private void createNewTask(Update update) {
         String inputMessage = update.message().text();
-
-        Pattern pattern = Pattern.compile("([0-9.:\\s]{16})(\\s)([\\W+]+)");
         Matcher matcher = pattern.matcher(inputMessage);
 
         if (matcher.matches()) {
-            System.out.println("GOTCHA");
             long chatId = update.message().chat().id();
             String date = matcher.group(1);
-            LocalDateTime formattedDate = LocalDateTime.parse(date, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+            LocalDateTime formattedDate = LocalDateTime.parse(date, formatterPattern);
             String task = matcher.group(3);
-            System.out.println("Дата и время: " + date);
-            System.out.println("Название задачи: " + task);
             NotificationTask newTask = new NotificationTask(chatId, task, formattedDate);
             notificationTaskRepository.save(newTask);
         }
@@ -73,7 +75,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             long chatId = update.message().chat().id();
             String messageText = "Hello new User!";
             SendMessage message = new SendMessage(chatId, messageText);
-            SendResponse response = telegramBot.execute(message);
+            telegramBot.execute(message);
         }
     }
 
@@ -81,9 +83,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     public void findActualTasks() {
         LocalDateTime taskTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
         List<NotificationTask> list = this.notificationTaskRepository.findNotificationTasksBySendTime(taskTime);
-        if (!list.isEmpty()) {
-            this.sendNotifications(list);
-        }
+        this.sendNotifications(list);
     }
 
     private void sendNotifications(List<NotificationTask> notificationTaskList) {
@@ -91,7 +91,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             String messageText = task.getSendMessage();
             Long chatId = task.getChatId();
             SendMessage message = new SendMessage(chatId, messageText);
-            SendResponse response = telegramBot.execute(message);
+            telegramBot.execute(message);
         }
     }
 
